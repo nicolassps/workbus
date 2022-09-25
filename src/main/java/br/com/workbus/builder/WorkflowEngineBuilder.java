@@ -5,18 +5,18 @@ import br.com.workbus.core.WorkflowExecutor;
 import br.com.workbus.core.WorkflowStep;
 
 public class WorkflowEngineBuilder<T> {
-    private Workflow<T> workflow;
+    private final Workflow<T> workflow;
 
-    protected WorkflowEngineBuilder(Workflow workflow){
+    protected WorkflowEngineBuilder(Workflow<T> workflow){
         this.workflow = workflow;
     }
 
-    public WorkflowStepBuilder<T> step(T key, WorkflowStep step){
+    public WorkflowStepBuilder<T> step(T key, WorkflowStep<?> step){
         workflow.nextStep(key, step);
         return WorkflowStepBuilder.<T>of(workflow, key);
     }
 
-    public WorkflowStepBuilder<T> step(T key, Class<? extends WorkflowStep> step){
+    public WorkflowStepBuilder<T> step(T key, Class<? extends WorkflowStep<?>> step){
         workflow.nextStep(key, step);
         return WorkflowStepBuilder.<T>of(workflow, key);
     }
@@ -25,7 +25,7 @@ public class WorkflowEngineBuilder<T> {
         return WorkflowExecutor.of(workflow);
     }
 
-    public static WorkflowEngineBuilder of(Workflow workflow){
-        return new WorkflowEngineBuilder(workflow);
+    public static <T> WorkflowEngineBuilder<T> of(Workflow<T> workflow){
+        return new WorkflowEngineBuilder<T>(workflow);
     }
 }

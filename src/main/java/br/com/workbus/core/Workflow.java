@@ -16,10 +16,10 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.String.format;
 
 public class Workflow<T> {
-    protected WorkflowStep preStep;
-    protected HashMap<T, WorkflowStep> steps = new HashMap<>();
+    protected Optional<WorkflowStep<?>> preStep = Optional.empty();
+    protected HashMap<T, WorkflowStep<?>> steps = new HashMap<>();
     protected HashMap<T, Consumer<Object>> callbacks = new HashMap<>();
-    protected LinkedList<T> executeOrder = new LinkedList();
+    protected LinkedList<T> executeOrder = new LinkedList<T>();
 
     protected Workflow(){}
 
@@ -27,11 +27,11 @@ public class Workflow<T> {
         return WorkflowBuilder.<T>of(new Workflow<T>());
     }
 
-    public void setPreStep(WorkflowStep preStep){
-        this.preStep = preStep;
+    public void setPreStep(WorkflowStep<?> preStep){
+        this.preStep = Optional.of(preStep);
     }
 
-    public void nextStep(T key, WorkflowStep step){
+    public void nextStep(T key, WorkflowStep<?> step){
         if(this.steps.containsKey(key))
             throw new InvalidKeyException(format("The step key %s already exists", key));
 
@@ -39,7 +39,7 @@ public class Workflow<T> {
         this.steps.put(key, step);
     }
 
-    public void nextStep(T key, Class<? extends WorkflowStep> step){
+    public void nextStep(T key, Class<? extends WorkflowStep<?>> step){
         if(this.steps.containsKey(key))
             throw new DuplicatedKeyException(format("The step key %s already exists", key));
 
@@ -48,23 +48,19 @@ public class Workflow<T> {
 
         try {
             o = Arrays.stream(constructors).findFirst().get().newInstance();
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
 
         this.executeOrder.add(key);
-        this.steps.put(key, (WorkflowStep) o);
+        this.steps.put(key, (WorkflowStep<?>) o);
     }
 
-    public void addCallback(T key, Consumer<Object> callback){
+    public <K> void addCallback(T key, Consumer<K> callback){
         if(FALSE.equals(this.steps.containsKey(key)))
             throw new DuplicatedKeyException(format("The step key %s doesn't exists for set callback", key));
 
-        this.callbacks.put(key, callback);
+        this.callbacks.put(key, (Consumer<Object>) callback);
     }
 
     @Override
